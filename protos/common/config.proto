@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "api/common;common";
+
+message ServerConfig {
+  message HTTP {
+    string network = 1;
+    string addr = 2;
+    int64 timeout_seconds = 3;
+  }
+  message GRPC {
+    string network = 1;
+    string addr = 2;
+    int64 timeout_seconds = 3;
+  }
+  message Trace {
+    string kind = 1;
+    string endpoint = 2;
+    string fraction = 3;
+  }
+  message Alarm {
+    string webhook = 1; // webhook
+    int64 delay_minutes = 2; // 默认值 2
+    int64 no_delay_count = 3; // 默认值 10
+    string service_name = 4; // 服务名称，如果不传取环境变量的数据
+    repeated string users = 5; // 报警at人名称
+  }
+  HTTP http = 1; // http信息
+  GRPC grpc = 2; // grpc信息
+  Trace trace = 3; // 链路追踪信息
+  string oss_domain = 4; // 对象存储domain
+  Alarm alarm = 5; // 报警
+}
+
+message DataConfig {
+  message Database {
+    string driver = 1;
+    string source = 2;
+    int32 level = 3;
+    int32 max_open = 4;
+    int32 max_idle = 5;
+    int32 max_life_time_seconds = 6;
+  }
+  message Redis {
+    string address = 1;
+    string password = 2;
+    int32 db = 3;
+    int32 max_idle = 4;
+    int64 read_timeout_seconds = 5;
+    int64 write_timeout_seconds = 6;
+  }
+  message Elastic {
+    string source = 1;
+    string username = 2;
+    string password = 3;
+    bool sniff = 4;
+  }
+  message ODPS {
+    string account_id = 1;
+    string account_key = 2;
+    string endpoint = 3;
+    string default_project_name = 4;
+  }
+  Database database = 1; // MySQL
+  Redis redis = 2; // redis
+  Elastic elastic = 3; // es
+  Database postgres = 4; // hologres
+  ODPS odps = 5; // maxcompute
+  Database mongo = 6; // mongodb
+}
+
+message GRPCClient {
+  string endpoint = 1;
+  int64 timeout_seconds = 2;
+}

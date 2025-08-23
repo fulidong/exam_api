@@ -1,0 +1,22 @@
+server:
+  http:
+    addr: 0.0.0.0:8000
+    timeout: 50s
+  grpc:
+    addr: 0.0.0.0:9000
+    timeout: 50s
+data:
+  database:
+    driver: mysql
+    source: wikifx:Wikifx2023@tcp(testdb-mysql.fxeyeinterface.com:3306)/cp_test?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=true&loc=Local
+  redis:
+    addr: 127.0.0.1:6379
+    read_timeout: 0.2s
+    write_timeout: 0.2s
+  jwt:
+    access_secret: "!@#eas#@!"
+    access_token_expire_minutes: 120
+  standard_score_formula_config:
+    expression: "5.5 + 2 * (raw_score - average_mark) / standard_mark"
+    rounding: 1
+

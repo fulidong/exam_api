@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "api/common;common";
+
+//------ 空请求/空返回
+message EmptyRequest {}
+message EmptyReply {}
+
+//------ 只返回字符串，用户三方回调
+message StringReply {
+  string body = 1;
+}
+
+//------ 错误返回
+message ErrorReply{
+  int32 code = 1;
+  string reason = 2;
+  string message = 3;
+  int64 time = 4;
+}
+
+//------ 健康检查
+enum HealthyStatus {
+  HealthyStatusUNKNOWN = 0;
+  HealthyStatusSERVING = 1;
+  HealthyStatusNOTSERVING = 2;
+}
+message HealthyReply {
+  HealthyStatus status = 1;
+}

@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package exam_api.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "common/common.proto";
+import "exam_api/v1/exam_modes.proto";
+
+option go_package = "exam_api/api/v1;v1";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "考试端接口";
+    version: "1.0";
+  };
+
+
+  schemes: HTTP;
+  consumes: "application/json";
+  produces: "application/json";
+  security_definitions: {
+    security: {
+      key: "ApiKeyAuth";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "x-token";
+      }
+    }
+  };
+  security: {
+    security_requirement: {
+      key: "ApiKeyAuth";
+      value: {};
+    }
+  };
+
+};
+
+service ExamService {
+  // 考试端登录
+  rpc ExamLogin(ExamLoginRequest) returns (ExamLoginResponse) {
+    option (google.api.http)={post:"/v1/exam/login", body:"*"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "考试端登录",tags: ["考试相关"]};
+  }
+
+  // 待考试列表
+  rpc GetExamPageList(GetExamPageListRequest) returns (GetExamPageListResponse) {
+    option (google.api.http)={get:"/v1/exam/page_list"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "待考试列表",tags: ["考试相关"]};
+  }
+
+  // 开始考试
+  rpc StartExam(StartExamRequest) returns (StartExamResponse){
+    option (google.api.http)={post:"/v1/exam/start", body:"*"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "开始考试",tags: ["考试相关"]};
+  };
+
+  // 获取考试题目
+  rpc ExamQuestion(ExamQuestionRequest) returns (ExamQuestionResponse){
+    option (google.api.http)={post:"/v1/exam/questions", body:"*"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "获取试卷题目",tags: ["考试相关"]};
+  };
+
+  //心跳&保存答案
+  rpc HeartbeatAndSave(HeartbeatAndSaveRequest) returns (HeartbeatAndSaveResponse){
+    option (google.api.http)={post:"/v1/exam/heartbeat_and_save", body:"*"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "心跳并保存答案",tags: ["考试相关"]};
+  };
+  //提交考试
+  rpc SubmitExam(SubmitExamRequest) returns (SubmitExamResponse){
+    option (google.api.http)={post:"/v1/exam/submit", body:"*"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "提交",tags: ["考试相关"]};
+  };
+}
+
+

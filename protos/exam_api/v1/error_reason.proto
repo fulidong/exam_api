@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package exam_api.v1;
+
+option go_package = "exam_api/api/v1;v1";
+option java_multiple_files = true;
+option java_package = "exam_api.v1";
+option objc_class_prefix = "EXAMSAPIV1";
+
+enum ErrorReason {
+  GREETER_UNSPECIFIED = 0;
+  USER_NOT_FOUND = 1;
+}

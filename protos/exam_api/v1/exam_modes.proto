@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package exam_api.v1;
+import "protoc-gen-openapiv2/options/annotations.proto";
+option go_package = "exam_api/api/v1;v1";
+
+
+message ExamLoginRequest {
+  string login_account=1 [json_name="login_account",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"登录名",required:["login_account"], max_length:10, min_length:6}];
+  string pass_word=2 [json_name="pass_word",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"密码",required:["pass_word"], max_length:10, min_length:6}];
+}
+
+message ExamLoginResponse {
+  string user_name=1 [json_name="user_name",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"登录名"}];
+  string token=2 [json_name="token=",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"token"}];
+}
+
+message GetExamPageListRequest {
+  int32 page_index=1 [json_name="page_index",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"页码", default:"1"}];
+  int32 page_size=2 [json_name="page_size",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"每页数", default:"10"}];
+}
+
+message GetExamPageListResponse {
+  repeated ExamData exam_list=1 [json_name="exam_list",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"待考试列表"}];
+  int64 total=2 [json_name="total",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"总数"}];
+}
+
+
+message ExamData {
+  string examinee_association_id=1 [json_name="examinee_association_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"关联id"}];
+  string sales_paper_name=2 [json_name="sales_paper_name",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"试卷名称"}];
+  int32 exam_status=3 [json_name="exam_status",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"状态：1未完成，2已完成"}];
+}
+
+
+message StartExamRequest {
+  string examinee_association_id = 1[json_name="examinee_association_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"关联id",required:["examinee_association_id"]}];
+}
+
+message StartExamResponse {
+  string exam_token=1 [json_name="exam_token",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"考试token"}];
+  int32 total_duration=2 [json_name="total_duration",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"考试总时间"}];
+  int32 used_duration=3 [json_name="used_duration",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"考试已使用时间"}];
+  int32 remaining=4 [json_name="remaining",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"考试剩余时间"}];
+}
+
+message QuestionData {
+  string question_id=1 [json_name="question_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"question_id"}];
+  string title=2 [json_name="title",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"题目标题"}];
+  QuestionType question_type_id=3 [json_name="question_type_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"状态:0单选、1多选、2判断"}];
+  int32 order=4 [json_name="order",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"题目序号"}];
+  repeated QuestionOptionData question_options_data=5 [json_name="question_options_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"题目选项内容"}];
+}
+
+message QuestionOptionData {
+  string question_option_id=1 [json_name="question_option_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"question_option_id"}];
+  string description=2 [json_name="description",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"选项内容"}];
+  string serial_number=3 [json_name="serial_number",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"选项序号"}];
+}
+
+message ExamQuestionRequest {
+  int32 page_index=1 [json_name="page_index",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"页码",default:"1"}];
+  int32 page_size=2 [json_name="page_size",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"每页展示题目数", default:"8"}];
+}
+
+message ExamQuestionResponse {
+  repeated QuestionData question_data=6 [json_name="question_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"试卷内容"}];
+  int64 total=2 [json_name="total",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"总数"}];
+}
+
+message HeartbeatAndSaveRequest {
+  string examinee_association_id=1 [json_name="examinee_association_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"examinee_association_id", required:["examinee_association_id"]}];
+  repeated QuestionAnswerData answer_data=2[json_name="answer_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"答案"}];
+}
+
+message HeartbeatAndSaveResponse {
+  int32 total_duration=1 [json_name="total_duration",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"考试总时间"}];
+  int32 used_duration=2 [json_name="used_duration",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"考试已使用时间"}];
+  int32 remaining=3 [json_name="remaining",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"考试剩余时间"}];
+}
+
+message QuestionAnswerData {
+  string question_id=1 [json_name="question_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"question_id"}];
+  repeated string options_serial_number_data=5 [json_name="options_serial_number_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"题目选项"}];
+}
+
+message SubmitExamRequest {
+  repeated QuestionAnswerData answer_data=2[json_name="answer_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"答案"}];
+}
+
+message SubmitExamResponse {
+}
+
+
+enum ExamineeStatus {
+  ExamineeNotActive=0;  // 未激活
+  ExamineeActive=1;     // 已激活
+}
+enum LoginPlatform {
+  NoKnow = 0;
+  Management = 1;
+  Exam=2;
+}
+enum StageNumber {
+  NoStart = 0;// 未开始
+  NoSubmit = 1;// 未提交
+  Submit = 2;// 已提交
+  CalculatePoints = 3;// 已算分
+  Failed = 4;// 处理失败
+}
+enum QuestionType {
+  RadioChoice = 0;
+  MultipleChoice = 1;
+  Judge = 2;
+}
