@@ -11,10 +11,11 @@ const (
 	SalesPaperDimensionQuestionOptionPrefix = "SPDQOP"
 	ExamineePrefix                          = "EP"
 	ExamineeSalesPaperAssociationPrefix     = "ESPA"
-	ExamineeEmailRecordPrefix               = "EER"
-	ExamineeAnswerPrefix                    = "EA"
-	ExamineeAnswerDimensionScorePrefix      = "EADS"
+	ExamineeEmailRecordPrefix               = "EERP"
+	ExamineeAnswerPrefix                    = "EAP"
+	ExamineeAnswerDimensionScorePrefix      = "EADSP"
 	ExamineeAnswerQuestionAnswerPrefix      = "EAQAP"
+	ExamiEventPrefix                        = "EEP"
 )
 
 var AllowedVars = map[string]interface{}{
@@ -53,3 +54,12 @@ const EmailTemplate = `
 {{.CompanyName}} 人力资源部
 {{.SendDate}}
 `
+
+type ExamEventType string
+
+const (
+	ExamEventHeartbeat    ExamEventType = "heartbeat"     // 心跳
+	ExamEventLongInactive ExamEventType = "long_inactive" // 长时间无心跳
+	ExamEventSubmit       ExamEventType = "submit"        // 提交
+	ExamEventTimeUp       ExamEventType = "time_up"       // 时间到
+)

@@ -1,9 +1,13 @@
 package main
 
 import (
+	"exam_api/internal/middleware"
+	"exam_api/internal/pkg/ijwt"
+	"exam_api/internal/pkg/isnowflake"
 	"flag"
 	"github.com/airunny/wiki-go-tools/ilog"
 	"os"
+	"time"
 
 	"exam_api/internal/conf"
 
@@ -67,6 +71,16 @@ func main() {
 	logger, closer := ilog.NewLogger(id, Name)
 	defer closer.Close()
 
+	// 初始化jwt
+	middleware.JWT = ijwt.NewSecureJWT(bc.Data.Jwt.AccessSecret, bc.Data.Jwt.ExamSecret, []ijwt.SecurityOption{
+		ijwt.WithAccessExpiry(time.Minute * time.Duration(bc.Data.Jwt.AccessTokenExpireMinutes)),
+	}...)
+	// 初始化雪花算法
+	snowFlake, err := isnowflake.NewSnowflake(1)
+	if err != nil {
+		panic(err)
+	}
+	isnowflake.SnowFlake = snowFlake
 	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
 	if err != nil {
 		panic(err)

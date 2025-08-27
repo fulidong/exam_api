@@ -9,7 +9,7 @@ import (
 
 func TestGen(t *testing.T) {
 	// 初始化数据库连接
-	dsn := "wikifx:Wikifx2023@tcp(testdb-mysql.fxeyeinterface.com:3306)/cp_test?charset=utf8&collation=utf8_general_ci&parseTime=true&loc=Local"
+	dsn := "root:Eas123!@tcp(115.190.122.151:3306)/cp_test?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=true&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn))
 	if err != nil {
 		panic("failed to connect database")

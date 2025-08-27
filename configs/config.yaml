@@ -1,22 +1,26 @@
 server:
   http:
-    addr: 0.0.0.0:8000
+    addr: 0.0.0.0:8001
     timeout: 50s
   grpc:
-    addr: 0.0.0.0:9000
+    addr: 0.0.0.0:9001
     timeout: 50s
 data:
   database:
     driver: mysql
-    source: wikifx:Wikifx2023@tcp(testdb-mysql.fxeyeinterface.com:3306)/cp_test?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=true&loc=Local
+    source: root:Eas123!@tcp(115.190.122.151:3306)/cp_test?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=true&loc=Local
   redis:
-    addr: 127.0.0.1:6379
+    host: 115.190.122.151
+    port: 6379
+    password: eas_redis
+    database: 0
+    pool_size: 10
+    min_idle_conns: 10
+    dial_timeout: 5s
     read_timeout: 0.2s
     write_timeout: 0.2s
   jwt:
-    access_secret: "!@#eas#@!"
+    access_secret: "!@#examLogin#@!"
+    exam_secret: "!@#examing#@!"
     access_token_expire_minutes: 120
-  standard_score_formula_config:
-    expression: "5.5 + 2 * (raw_score - average_mark) / standard_mark"
-    rounding: 1
 

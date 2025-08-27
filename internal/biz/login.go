@@ -45,7 +45,7 @@ func (uc *LoginUseCase) ExamLogin(ctx context.Context, req *v1.ExamLoginRequest)
 			return
 		}
 	}
-	if user.Status != int32(v1.ExamineeStatus_ExamineeNotActive) {
+	if user.Status != int32(v1.ExamineeStatus_ExamineeActive) {
 		err = errors.New("用户未激活")
 		return
 	}

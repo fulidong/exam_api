@@ -2,6 +2,7 @@ package data
 
 import (
 	"errors"
+	"exam_api/internal/biz"
 	"exam_api/internal/conf"
 	"exam_api/internal/pkg/igorm"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
+
 	"strings"
 	"time"
 )
@@ -21,10 +23,15 @@ var ProviderSet = wire.NewSet(NewData,
 	NewQuestionRepo,
 	NewExamineeRepo,
 	NewExamineeSalesPaperAssociationRepo,
-	NewExamineeAnswerRepo)
+	NewExamineeAnswerRepo,
+	NewExamineeQuestionAnswerRepo,
+	NewExamEventRepo,
+	RedisRepositoryFromData)
 
 type Data struct {
-	db *gorm.DB
+	db          *gorm.DB
+	RedisClient *RedisClient
+	RedisRepo   biz.RedisRepository
 }
 
 func NewData(conf *conf.Data, logger log.Logger) (*Data, func(), error) {
@@ -45,13 +52,24 @@ func NewData(conf *conf.Data, logger log.Logger) (*Data, func(), error) {
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
+	// 初始化 Redis 客户端
+	redisClient := NewRedisClient(conf, logger)
+
 	return &Data{
-			db: db,
+			db:          db,
+			RedisClient: redisClient,
+			RedisRepo:   NewRedisRepository(redisClient, logger),
 		}, func() {
 			if err := sqlDB.Close(); err != nil {
 				log.NewHelper(logger).Error("failed to close database", err)
 			}
+			if err := redisClient.client.Close(); err != nil {
+				log.NewHelper(logger).Error("failed to close redis", err)
+			}
 		}, nil
+}
+func RedisRepositoryFromData(data *Data) biz.RedisRepository {
+	return data.RedisRepo
 }
 
 func getSingleRecordByScope[T any](db *gorm.DB) (*T, error) {

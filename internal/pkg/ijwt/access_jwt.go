@@ -50,15 +50,13 @@ type SessionStore struct {
 
 // 考试会话声明
 type ExamSessionClaims struct {
-	SessionID         string `json:"sid"` // 会话ID
-	ExamAssociationId string `json:"eid"` // 考试ID
-	UserID            string `json:"uid"` // 用户ID
-	ClientFP          string `json:"cfp"` // 客户端指纹
-	IssuedAt          int64  `json:"iat"` // 签发时间
-	ExpiresAt         int64  `json:"exp"` // 过期时间
-	NotBefore         int64  `json:"nbf"` // 生效时间
-	Sequence          int    `json:"seq"` // 序列号
-	LastIP            string `json:"ip"`  // 最后使用的IP
+	SessionID     string `json:"sid"` // 会话ID
+	AssociationId string `json:"eid"` // 考试ID
+	UserID        string `json:"uid"` // 用户ID
+	ClientFP      string `json:"cfp"` // 客户端指纹
+	IssuedAt      int64  `json:"iat"` // 签发时间
+	ExpiresAt     int64  `json:"exp"` // 过期时间
+	NotBefore     int64  `json:"nbf"` // 生效时间
 }
 
 // 主访问令牌声明
@@ -176,7 +174,7 @@ func (j *SecureJWT) VerifyAccessToken(tokenString string) (*AccessClaims, error)
 // 生成考试令牌
 func (j *SecureJWT) GenerateExamToken(
 	accessToken string,
-	examAssociationId string,
+	AssociationId string,
 	examDuration time.Duration,
 	clientInfo *iclient.ClientInfo,
 ) (string, *ExamSessionClaims, error) {
@@ -191,7 +189,6 @@ func (j *SecureJWT) GenerateExamToken(
 
 	// 获取客户端指纹
 	clientFP := j.generateClientFingerprintFromInfo(clientInfo)
-	clientIP := clientInfo.IP
 
 	now := time.Now()
 	expiry := examDuration
@@ -200,15 +197,13 @@ func (j *SecureJWT) GenerateExamToken(
 	}
 
 	claims := ExamSessionClaims{
-		SessionID:         sessionID,
-		ExamAssociationId: examAssociationId,
-		UserID:            accessClaims.UserID,
-		ClientFP:          clientFP,
-		IssuedAt:          now.Unix(),
-		ExpiresAt:         now.Add(expiry).Unix(),
-		NotBefore:         now.Unix(),
-		Sequence:          0,
-		LastIP:            clientIP,
+		SessionID:     sessionID,
+		AssociationId: AssociationId,
+		UserID:        accessClaims.UserID,
+		ClientFP:      clientFP,
+		IssuedAt:      now.Unix(),
+		ExpiresAt:     now.Add(expiry).Unix(),
+		NotBefore:     now.Unix(),
 	}
 
 	// 生成令牌
@@ -217,9 +212,6 @@ func (j *SecureJWT) GenerateExamToken(
 		return "", nil, err
 	}
 
-	// 存储会话信息
-	j.storeSession(claims)
-
 	return token, &claims, nil
 }
 
@@ -227,9 +219,7 @@ func (j *SecureJWT) GenerateExamToken(
 func (j *SecureJWT) VerifyExamToken(
 	accessToken string,
 	examToken string,
-	clientInfo *iclient.ClientInfo,
-	incrementSequence bool,
-) (*ExamSessionClaims, error) {
+	clientInfo *iclient.ClientInfo) (*ExamSessionClaims, error) {
 	// 1. 验证主访问令牌
 	accessClaims, err := j.VerifyAccessToken(accessToken)
 	if err != nil {
@@ -242,44 +232,14 @@ func (j *SecureJWT) VerifyExamToken(
 		return nil, fmt.Errorf("exam token invalid: %w", err)
 	}
 
-	// 3. 检查令牌关联性
+	// 3. 检查是否过期
+	if time.Now().Unix() > examClaims.ExpiresAt {
+		return nil, ErrTokenExpired
+	}
+	// 4. 检查令牌关联性
 	if examClaims.UserID != accessClaims.UserID {
 		return nil, errors.New("token user mismatch")
 	}
-
-	// 4. 获取存储的会话
-	storedClaims, err := j.getSession(examClaims.SessionID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 5. 验证客户端指纹
-	currentFP := j.generateClientFingerprintFromInfo(clientInfo)
-	if storedClaims.ClientFP != currentFP {
-		// 允许轻微变化（如语言设置更改）
-		if !j.isFingerprintChangeAllowed(storedClaims.ClientFP, currentFP) {
-			return nil, ErrFingerprintChange
-		}
-	}
-
-	// 6. 验证序列号
-	if incrementSequence {
-		if examClaims.Sequence <= storedClaims.Sequence {
-			return nil, ErrSequenceMismatch
-		}
-
-		// 更新序列号
-		storedClaims.Sequence = examClaims.Sequence
-		j.storeSession(storedClaims)
-	}
-
-	// 7. 更新最后IP
-	currentIP := clientInfo.IP
-	if storedClaims.LastIP != currentIP {
-		storedClaims.LastIP = currentIP
-		j.storeSession(storedClaims)
-	}
-
 	return &examClaims, nil
 }
 
@@ -449,49 +409,6 @@ func (j *SecureJWT) isFingerprintChangeAllowed(original, current string) bool {
 
 	// 检查UserAgent和平台
 	return origParts[0] == currParts[0] && origParts[3] == currParts[3]
-}
-
-// =====================
-// 会话存储管理
-// =====================
-
-// 存储会话
-func (j *SecureJWT) storeSession(claims ExamSessionClaims) {
-	j.sessionStore.Lock()
-	defer j.sessionStore.Unlock()
-	j.sessionStore.sessions[claims.SessionID] = claims
-}
-
-// 获取会话
-func (j *SecureJWT) getSession(sessionID string) (ExamSessionClaims, error) {
-	j.sessionStore.RLock()
-	defer j.sessionStore.RUnlock()
-
-	if session, ok := j.sessionStore.sessions[sessionID]; ok {
-		return session, nil
-	}
-
-	return ExamSessionClaims{}, ErrSessionNotFound
-}
-
-// 删除会话
-func (j *SecureJWT) DeleteSession(sessionID string) {
-	j.sessionStore.Lock()
-	defer j.sessionStore.Unlock()
-	delete(j.sessionStore.sessions, sessionID)
-}
-
-// 清理过期会话
-func (j *SecureJWT) CleanupSessions() {
-	j.sessionStore.Lock()
-	defer j.sessionStore.Unlock()
-
-	now := time.Now().Unix()
-	for id, session := range j.sessionStore.sessions {
-		if session.ExpiresAt < now {
-			delete(j.sessionStore.sessions, id)
-		}
-	}
 }
 
 // =====================

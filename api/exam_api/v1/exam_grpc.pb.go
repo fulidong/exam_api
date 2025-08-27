@@ -30,6 +30,8 @@ type ExamServiceClient interface {
 	StartExam(ctx context.Context, in *StartExamRequest, opts ...grpc.CallOption) (*StartExamResponse, error)
 	// 获取考试题目
 	ExamQuestion(ctx context.Context, in *ExamQuestionRequest, opts ...grpc.CallOption) (*ExamQuestionResponse, error)
+	// 获取考试上次题目作答记录
+	ExamQuestionRecord(ctx context.Context, in *ExamQuestionRecordRequest, opts ...grpc.CallOption) (*ExamQuestionRecordResponse, error)
 	// 心跳&保存答案
 	HeartbeatAndSave(ctx context.Context, in *HeartbeatAndSaveRequest, opts ...grpc.CallOption) (*HeartbeatAndSaveResponse, error)
 	// 提交考试
@@ -80,6 +82,15 @@ func (c *examServiceClient) ExamQuestion(ctx context.Context, in *ExamQuestionRe
 	return out, nil
 }
 
+func (c *examServiceClient) ExamQuestionRecord(ctx context.Context, in *ExamQuestionRecordRequest, opts ...grpc.CallOption) (*ExamQuestionRecordResponse, error) {
+	out := new(ExamQuestionRecordResponse)
+	err := c.cc.Invoke(ctx, "/exam_api.v1.ExamService/ExamQuestionRecord", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *examServiceClient) HeartbeatAndSave(ctx context.Context, in *HeartbeatAndSaveRequest, opts ...grpc.CallOption) (*HeartbeatAndSaveResponse, error) {
 	out := new(HeartbeatAndSaveResponse)
 	err := c.cc.Invoke(ctx, "/exam_api.v1.ExamService/HeartbeatAndSave", in, out, opts...)
@@ -110,6 +121,8 @@ type ExamServiceServer interface {
 	StartExam(context.Context, *StartExamRequest) (*StartExamResponse, error)
 	// 获取考试题目
 	ExamQuestion(context.Context, *ExamQuestionRequest) (*ExamQuestionResponse, error)
+	// 获取考试上次题目作答记录
+	ExamQuestionRecord(context.Context, *ExamQuestionRecordRequest) (*ExamQuestionRecordResponse, error)
 	// 心跳&保存答案
 	HeartbeatAndSave(context.Context, *HeartbeatAndSaveRequest) (*HeartbeatAndSaveResponse, error)
 	// 提交考试
@@ -132,6 +145,9 @@ func (UnimplementedExamServiceServer) StartExam(context.Context, *StartExamReque
 }
 func (UnimplementedExamServiceServer) ExamQuestion(context.Context, *ExamQuestionRequest) (*ExamQuestionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExamQuestion not implemented")
+}
+func (UnimplementedExamServiceServer) ExamQuestionRecord(context.Context, *ExamQuestionRecordRequest) (*ExamQuestionRecordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExamQuestionRecord not implemented")
 }
 func (UnimplementedExamServiceServer) HeartbeatAndSave(context.Context, *HeartbeatAndSaveRequest) (*HeartbeatAndSaveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HeartbeatAndSave not implemented")
@@ -224,6 +240,24 @@ func _ExamService_ExamQuestion_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ExamService_ExamQuestionRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExamQuestionRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExamServiceServer).ExamQuestionRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/exam_api.v1.ExamService/ExamQuestionRecord",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExamServiceServer).ExamQuestionRecord(ctx, req.(*ExamQuestionRecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ExamService_HeartbeatAndSave_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HeartbeatAndSaveRequest)
 	if err := dec(in); err != nil {
@@ -282,6 +316,10 @@ var ExamService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExamQuestion",
 			Handler:    _ExamService_ExamQuestion_Handler,
+		},
+		{
+			MethodName: "ExamQuestionRecord",
+			Handler:    _ExamService_ExamQuestionRecord_Handler,
 		},
 		{
 			MethodName: "HeartbeatAndSave",

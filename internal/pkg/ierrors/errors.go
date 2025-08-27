@@ -11,6 +11,7 @@ var (
 	ErrAccessTokenExpired  = errors.New(400, "ACCESS_TOKEN_EXPIRED", "token已经过期")
 	ErrResourceNotFound    = errors.New(404, "RESOURCE_NOT_FOUND", "资源不存在")
 	ErrInternalServer      = errors.New(500, "INTERNAL_SERVER_ERROR", "服务内部错误")
+	ErrHeartbeat           = errors.New(429, "HEARTBEAT_ERROR", "心跳过于频繁")
 )
 
 func WithReason(e *errors.Error, in string) *errors.Error {

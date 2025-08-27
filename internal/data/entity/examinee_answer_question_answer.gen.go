@@ -17,9 +17,8 @@ type ExamineeAnswerQuestionAnswer struct {
 	ID               string         `gorm:"column:id;primaryKey;comment:主键" json:"id"`                                              // 主键
 	ExamineeAnswerID string         `gorm:"column:examinee_answer_id;not null;comment:ExamineeAnswer表外键" json:"examinee_answer_id"` // ExamineeAnswer表外键
 	QuestionID       string         `gorm:"column:question_id;not null;comment:Question表ID" json:"question_id"`                     // Question表ID
-	QuestionAnswer   string         `gorm:"column:question_answer;not null;comment:问题答案" json:"question_answer"`                    // 问题答案
 	Score            float64        `gorm:"column:score;not null;default:0.00;comment:得分" json:"score"`                             // 得分
-	OptionSign       string         `gorm:"column:option_sign;not null;comment:选项标记：例如ABCD" json:"option_sign"`                     // 选项标记：例如ABCD
+	OptionSign       string         `gorm:"column:option_sign;comment:选项标记：例如ABCD" json:"option_sign"`                              // 选项标记：例如ABCD
 	CreatedAt        time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`    // 创建时间
 	UpdatedAt        time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`    // 更新时间
 	CreatedBy        string         `gorm:"column:created_by;not null;comment:创建人标识" json:"created_by"`                             // 创建人标识

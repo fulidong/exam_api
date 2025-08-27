@@ -104,36 +104,36 @@ func TryParseHeader(opts ...Option) middleware.Middleware {
 			ctx = icontext.WithUserRuleKey(ctx, claims.Role)
 			// accessToken
 			ctx = icontext.WithUserTokenKey(ctx, jwt)
-
+			// user agent
+			ctx = icontext.WithUserAgentKey(ctx, iheader.GetUserAgent(header))
 			return handler(ctx, req)
 		}
 	}
 }
 
-func CheckExamTokenMiddleware() middleware.Middleware {
+func AuthExamTokenMiddleware() middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			r, ok := req.(*http.Request)
-			clientInfo := &iclient.ClientInfo{}
-			if ok {
-				clientInfo = &iclient.ClientInfo{
-					IP:         getClientIP(r),
-					UserAgent:  r.UserAgent(),
-					Accept:     r.Header.Get("Accept"),
-					AcceptLang: r.Header.Get("Accept-Language"),
-					Platform:   r.Header.Get("Sec-CH-UA-Platform"),
-					CanvasFP:   r.Header.Get("X-Canvas-FP"),
-					WebGLFP:    r.Header.Get("X-WebGL-FP"),
-					FontsFP:    r.Header.Get("X-Fonts-FP"),
-				}
-				// 将 clientInfo 放入 context
-				ctx = icontext.WithUserClientKey(ctx, clientInfo)
-			}
 			tr, ok := transport.FromServerContext(ctx)
 			if !ok {
 				return handler(ctx, req)
 			}
 			header := tr.RequestHeader()
+			clientInfo := &iclient.ClientInfo{}
+			if ok {
+				clientInfo = &iclient.ClientInfo{
+					IP:         getClientIP(tr),
+					UserAgent:  header.Get("User-Agent"),
+					Accept:     header.Get("Accept"),
+					AcceptLang: header.Get("Accept-Language"),
+					Platform:   header.Get("Sec-CH-UA-Platform"),
+					CanvasFP:   header.Get("X-Canvas-FP"),
+					WebGLFP:    header.Get("X-WebGL-FP"),
+					FontsFP:    header.Get("X-Fonts-FP"),
+				}
+				// 将 clientInfo 放入 context
+				ctx = icontext.WithUserClientKey(ctx, clientInfo)
+			}
 			// 获取当前请求的 FullMethod
 			method := tr.Operation()
 			jwt, _ := icontext.UserTokenFrom(ctx)
@@ -146,16 +146,18 @@ func CheckExamTokenMiddleware() middleware.Middleware {
 				// 返回 Unauthorized 错误
 				return nil, errors.Unauthorized("Unauthorized", "missing or invalid exam token")
 			}
-			claims, err := JWT.VerifyExamToken(jwt, examJwt, clientInfo, true)
-			if err != nil || claims == nil || claims.ExamAssociationId == "" || claims.UserID == "" {
+			claims, err := JWT.VerifyExamToken(jwt, examJwt, clientInfo)
+			if err != nil || claims == nil || claims.AssociationId == "" || claims.UserID == "" {
 				// JWT 解析失败
 				return nil, errors.Unauthorized("Unauthorized", "invalid token: "+err.Error())
 			}
 			if claims.ExpiresAt < time.Now().Unix() {
 				return nil, errors.Unauthorized("Unauthorized", " exam token expiration ")
 			}
-			ctx = icontext.WithAssociationIdKey(ctx, claims.ExamAssociationId)
-			return handler(ctx, r)
+			ctx = icontext.WithAssociationIdKey(ctx, claims.AssociationId)
+			ctx = icontext.WithSessionIdKey(ctx, claims.SessionID)
+			ctx = icontext.WithExamTokenKey(ctx, examJwt)
+			return handler(ctx, req)
 		}
 	}
 }
@@ -204,16 +206,26 @@ func WriteResponse(w http.ResponseWriter, _ *stdHttp.Request, body interface{}) 
 }
 
 // 获取客户端IP
-func getClientIP(r *http.Request) string {
+func getClientIP(tr transport.Transporter) string {
 	// 检查代理头
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+	host := ""
+	if ip := tr.RequestHeader().Get("X-Forwarded-For"); ip != "" {
 		return strings.Split(ip, ",")[0]
 	}
-	if ip := r.Header.Get("X-Real-Ip"); ip != "" {
+	if ip := tr.RequestHeader().Get("X-Real-Ip"); ip != "" {
 		return ip
 	}
 
 	// 使用远程地址
-	host, _, _ := strings.Cut(r.RemoteAddr, ":")
+	if ht, ok := tr.(*http.Transport); ok {
+		// 获取 *http.Request
+		httpRequest := ht.Request()
+		if httpRequest != nil {
+			host, _, _ = strings.Cut(httpRequest.RemoteAddr, ":")
+			// 你可以选择将 remoteAddr 存入 ctx 供后续 handler 使用
+			// ctx = context.WithValue(ctx, "remote_addr", remoteAddr)
+		}
+	}
+
 	return host
 }

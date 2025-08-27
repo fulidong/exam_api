@@ -26,7 +26,7 @@ func NewHTTPServer(c *conf.Server, exam *service.ExamService, logger log.Logger)
 			recovery.Recovery(),
 			middleware.RequestIdWithHeader,
 			middleware.TryParseHeader(),
-			middleware.CheckExamTokenMiddleware(),
+			middleware.AuthExamTokenMiddleware(),
 			validate.Validator(),
 		),
 		http.ErrorEncoder(middleware.ErrorEncoder),

@@ -9,4 +9,6 @@ var ProviderSet = wire.NewSet(
 	NewExamineeSalesPaperAssociationUseCase,
 	NewSalesPaperUseCase,
 	NewQuestionUseCase,
-	NewExamineeAnswerUseCase)
+	NewExamineeAnswerUseCase,
+	NewExamineeQuestionAnswerUseCase,
+	NewExamEventUseCase)

@@ -23,13 +23,13 @@ func NewSalesPaperUseCase(repo SalesPaperRepo, logger log.Logger) *SalesPaperUse
 
 func (uc *SalesPaperUseCase) GetSalesPaperDetail(ctx context.Context, salesPaperId string) (resp *entity.SalesPaper, err error) {
 	l := uc.log.WithContext(ctx)
-	res, err := uc.repo.GetByID(ctx, salesPaperId)
+	resp, err = uc.repo.GetByID(ctx, salesPaperId)
 	if err != nil {
 		l.Errorf("GetSalesPaperDetail.repo.GetByID Failed, salesPaperId:%v, err:%v", salesPaperId, err.Error())
 		err = innErr.ErrInternalServer
 		return
 	}
-	if res == nil {
+	if resp == nil {
 		err = errors.New("试卷不存在")
 		return
 	}

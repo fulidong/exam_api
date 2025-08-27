@@ -31,14 +31,20 @@ message Data {
     string source = 2;
   }
   message Redis {
-    string network = 1;
-    string addr = 2;
-    google.protobuf.Duration read_timeout = 3;
-    google.protobuf.Duration write_timeout = 4;
+    string host = 1;
+    int32 port = 2;
+    string password = 3;
+    int32 database = 4;
+    int32 pool_size = 5;
+    int32 min_idle_conns = 6;
+    google.protobuf.Duration dial_timeout = 7;
+    google.protobuf.Duration read_timeout = 8;
+    google.protobuf.Duration write_timeout = 9;
   }
   message JWT {
     string access_secret = 1;
-    int64 access_token_expire_minutes = 2;
+    string exam_secret = 2;
+    int64 access_token_expire_minutes = 3;
   }
   message StandardScoreFormulaConfig {
     string expression = 1;

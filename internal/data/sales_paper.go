@@ -21,7 +21,7 @@ func NewSalesPaperRepo(data *Data, logger log.Logger) biz.SalesPaperRepo {
 
 func (r *SalesPaperRepo) GetByID(ctx context.Context, salesPaperId string) (resEntity *entity.SalesPaper, err error) {
 	resEntity, err = getSingleRecordByScope[entity.SalesPaper](
-		r.data.db.WithContext(ctx).Model(resEntity).Where(" id = ? ", salesPaperId),
+		r.data.db.WithContext(ctx).Model(resEntity).Where(" id = ? and is_enabled = 1", salesPaperId),
 	)
 	if err != nil {
 		return nil, err

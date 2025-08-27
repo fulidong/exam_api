@@ -43,7 +43,7 @@ func (r *ExamineeAnswerRepo) Create(ctx context.Context, examineeAnswer *entity.
 }
 
 // 更新最新动作
-func (r *ExamineeAnswerRepo) UpdateAction(ctx context.Context, associationId string, lastActionTime, lastActionTime2 time.Time, remaining int32, completeQuestionNum int32) error {
+func (r *ExamineeAnswerRepo) UpdateAction(ctx context.Context, examineeAnswerId string, lastActionTime, lastActionTime2 time.Time, remaining int32, completeQuestionNum int32) (int64, error) {
 	// 准备更新字段
 	updates := map[string]interface{}{
 		"last_action_time":      lastActionTime,
@@ -52,15 +52,15 @@ func (r *ExamineeAnswerRepo) UpdateAction(ctx context.Context, associationId str
 		"updated_by":            "service",
 	}
 	// 执行更新
-	err := r.data.db.WithContext(ctx).Model(&entity.ExamineeAnswer{}).
-		Where(" id = ? and last_action_time = ? ", associationId, lastActionTime2).
-		Updates(updates).Error
+	res := r.data.db.WithContext(ctx).Model(&entity.ExamineeAnswer{}).
+		Where(" id = ? and last_action_time = ? ", examineeAnswerId, lastActionTime2).
+		Updates(updates)
 
-	return err
+	return res.RowsAffected, res.Error
 }
 
 // 更新结果
-func (r *ExamineeAnswerRepo) UpdateResult(ctx context.Context, associationId string, score float64, comparability, usability int32) error {
+func (r *ExamineeAnswerRepo) UpdateResult(ctx context.Context, examineeAnswerId string, score float64, comparability, usability int32) error {
 	// 准备更新字段
 	updates := map[string]interface{}{
 		"score":         score,
@@ -70,14 +70,14 @@ func (r *ExamineeAnswerRepo) UpdateResult(ctx context.Context, associationId str
 	}
 	// 执行更新
 	err := r.data.db.WithContext(ctx).Model(&entity.ExamineeAnswer{}).
-		Where(" id = ? ", associationId).
+		Where(" id = ? ", examineeAnswerId).
 		Updates(updates).Error
 
 	return err
 }
 
 // 提交试卷
-func (r *ExamineeAnswerRepo) SubmitResult(ctx context.Context, associationId string, score float64, comparability, usability int32) error {
+func (r *ExamineeAnswerRepo) SubmitResult(ctx context.Context, examineeAnswerId string, score float64, comparability, usability int32) error {
 	// 准备更新字段
 	updates := map[string]interface{}{
 		"submit_time":           score,
@@ -87,7 +87,7 @@ func (r *ExamineeAnswerRepo) SubmitResult(ctx context.Context, associationId str
 	}
 	// 执行更新
 	err := r.data.db.WithContext(ctx).Model(&entity.ExamineeAnswer{}).
-		Where(" id = ? ", associationId).
+		Where(" id = ? ", examineeAnswerId).
 		Updates(updates).Error
 
 	return err

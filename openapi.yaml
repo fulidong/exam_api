@@ -6,6 +6,25 @@ info:
     title: ExamService API
     version: 0.0.1
 paths:
+    /v1/exam/exam_record:
+        post:
+            tags:
+                - ExamService
+            description: 获取考试上次题目作答记录
+            operationId: ExamService_ExamQuestionRecord
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/exam_api.v1.ExamQuestionRecordRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/exam_api.v1.ExamQuestionRecordResponse'
     /v1/exam/heartbeat_and_save:
         post:
             tags:
@@ -69,17 +88,11 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/exam_api.v1.GetExamPageListResponse'
     /v1/exam/questions:
-        post:
+        get:
             tags:
                 - ExamService
             description: 获取考试题目
             operationId: ExamService_ExamQuestion
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/exam_api.v1.ExamQuestionRequest'
-                required: true
             responses:
                 "200":
                     description: OK
@@ -151,15 +164,16 @@ components:
                     type: string
                 token=:
                     type: string
-        exam_api.v1.ExamQuestionRequest:
+        exam_api.v1.ExamQuestionRecordRequest:
+            type: object
+            properties: {}
+        exam_api.v1.ExamQuestionRecordResponse:
             type: object
             properties:
-                page_index:
-                    type: integer
-                    format: int32
-                page_size:
-                    type: integer
-                    format: int32
+                answer_data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/exam_api.v1.QuestionAnswerData'
         exam_api.v1.ExamQuestionResponse:
             type: object
             properties:
@@ -167,8 +181,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/exam_api.v1.QuestionData'
-                total:
-                    type: string
         exam_api.v1.GetExamPageListResponse:
             type: object
             properties:

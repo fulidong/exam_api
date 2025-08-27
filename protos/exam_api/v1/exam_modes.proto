@@ -59,13 +59,17 @@ message QuestionOptionData {
 }
 
 message ExamQuestionRequest {
-  int32 page_index=1 [json_name="page_index",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"页码",default:"1"}];
-  int32 page_size=2 [json_name="page_size",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"每页展示题目数", default:"8"}];
 }
 
 message ExamQuestionResponse {
   repeated QuestionData question_data=6 [json_name="question_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"试卷内容"}];
-  int64 total=2 [json_name="total",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"总数"}];
+}
+
+message ExamQuestionRecordRequest {
+}
+
+message ExamQuestionRecordResponse {
+  repeated QuestionAnswerData answer_data=6 [json_name="answer_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"答案记录"}];
 }
 
 message HeartbeatAndSaveRequest {
@@ -103,10 +107,11 @@ enum LoginPlatform {
 }
 enum StageNumber {
   NoStart = 0;// 未开始
-  NoSubmit = 1;// 未提交
+  InProgress = 1;// 进行中
   Submit = 2;// 已提交
   CalculatePoints = 3;// 已算分
-  Failed = 4;// 处理失败
+  Expire = 4;// 已过期
+  Failed = 5;// 处理失败
 }
 enum QuestionType {
   RadioChoice = 0;

@@ -10,7 +10,7 @@ func (s *ExamService) GetExamPageList(ctx context.Context, in *v1.GetExamPageLis
 }
 
 func (s *ExamService) ExamQuestion(ctx context.Context, in *v1.ExamQuestionRequest) (*v1.ExamQuestionResponse, error) {
-	return s.questionUc.ExamQuestion(ctx, in)
+	return s.examineeSalesPaperAssociationUc.ExamQuestion(ctx, in)
 }
 
 func (s *ExamService) StartExam(ctx context.Context, in *v1.StartExamRequest) (*v1.StartExamResponse, error) {

@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	v1 "exam_api/api/exam_api/v1"
 	"exam_api/internal/biz"
 	"exam_api/internal/data/entity"
 	"github.com/go-kratos/kratos/v2/log"
@@ -33,7 +32,7 @@ func (r *QuestionRepo) GetList(ctx context.Context, salesPaperId string) (res []
 	return
 }
 
-func (r *QuestionRepo) GetPageListBySalesPaperId(ctx context.Context, in *v1.ExamQuestionRequest, salesPaperId string) (res []*entity.Question, total int64, err error) {
+func (r *QuestionRepo) GetPageListBySalesPaperId(ctx context.Context, salesPaperId string) (res []*entity.Question, err error) {
 
 	session := r.data.db.WithContext(ctx)
 	session = session.Table((&entity.Question{}).TableName())
@@ -41,17 +40,14 @@ func (r *QuestionRepo) GetPageListBySalesPaperId(ctx context.Context, in *v1.Exa
 	if q != "" {
 		session.Where(q, v...)
 	}
-	session.Count(&total)
 	err = session.
 		Order(" `order` asc").
-		Offset(int((in.PageIndex - 1) * in.PageSize)).
-		Limit(int(in.PageSize)).
 		Find(&res).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	return res, total, nil
+	return res, nil
 }
 
 func (r *QuestionRepo) GetListBySalesPaperId(ctx context.Context, salesPaperId string) (res []*entity.Question, err error) {

@@ -14,9 +14,12 @@ const (
 	userIdKey        = "userIdKey"        // 用户ID
 	userNameKey      = "userNameKey"      // 用户名称
 	userRuleKey      = "userRuleKey"      // 用户角色
-	userTokenKey     = "userTokenKey"     // 用户角色
+	userTokenKey     = "userTokenKey"     // 登录token
 	userClientKey    = "userClientKey"    //用户客户端信息
 	associationIdKey = "associationIdKey" //关联id信息
+	sessionIdKey     = "sessionIdKey"     //关联id信息
+	examTokenKey     = "examTokenKey"     // exam token
+	userAgentKey     = "userAgentKey"     // exam token
 )
 
 func withValue(ctx context.Context, key, value string) context.Context {
@@ -73,6 +76,30 @@ func AssociationIdFrom(ctx context.Context) (string, bool) {
 
 func WithAssociationIdKey(ctx context.Context, in string) context.Context {
 	return withValue(ctx, associationIdKey, in)
+}
+
+func SessionIdFrom(ctx context.Context) (string, bool) {
+	return fromValue(ctx, sessionIdKey)
+}
+
+func WithSessionIdKey(ctx context.Context, in string) context.Context {
+	return withValue(ctx, sessionIdKey, in)
+}
+
+func ExamTokenFrom(ctx context.Context) (string, bool) {
+	return fromValue(ctx, examTokenKey)
+}
+
+func WithExamTokenKey(ctx context.Context, in string) context.Context {
+	return withValue(ctx, examTokenKey, in)
+}
+
+func UserAgentFrom(ctx context.Context) (string, bool) {
+	return fromValue(ctx, userAgentKey)
+}
+
+func WithUserAgentKey(ctx context.Context, in string) context.Context {
+	return withValue(ctx, userAgentKey, in)
 }
 
 func UserClientFrom(ctx context.Context) (*iclient.ClientInfo, bool) {

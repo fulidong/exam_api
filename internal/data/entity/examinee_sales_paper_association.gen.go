@@ -19,8 +19,7 @@ type ExamineeSalesPaperAssociation struct {
 	SalesPaperName string         `gorm:"column:sales_paper_name;not null;comment:考试名称" json:"sales_paper_name"`                      // 考试名称
 	ExamineeID     string         `gorm:"column:examinee_id;not null;comment:关联考生ID" json:"examinee_id"`                              // 关联考生ID
 	EmailStatus    int32          `gorm:"column:email_status;not null;default:1;comment:邮件状态：1.未发送，2.已发送，3.发送失败" json:"email_status"` // 邮件状态：1.未发送，2.已发送，3.发送失败
-	ReportPath     string         `gorm:"column:report_path;not null;comment:答题报告路径" json:"report_path"`                              // 答题报告路径
-	StageNumber    int32          `gorm:"column:stage_number;not null;comment:阶段编号（0~4）" json:"stage_number"`                         // 阶段编号（0~4）
+	StageNumber    int32          `gorm:"column:stage_number;not null;comment:阶段编号（0~5）" json:"stage_number"`                         // 阶段编号（0~5）
 	CreatedAt      time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP;comment:创建时间" json:"created_at"`        // 创建时间
 	UpdatedAt      time.Time      `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP;comment:更新时间" json:"updated_at"`        // 更新时间
 	CreatedBy      string         `gorm:"column:created_by;not null;comment:创建人标识" json:"created_by"`                                 // 创建人标识

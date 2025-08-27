@@ -13,10 +13,15 @@ const (
 	ForwardForHeaderKey     = "X-Forwarded-For"  // 客户端ip
 	RequestIdKey            = "X-Request-Id"     // request_id
 	ExamTokenHeaderKey      = "X-Exam-Token"
+	UserAgentKey            = "User-Agent"
 )
 
 func GetToken(h transport.Header) string {
 	return h.Get(TokenHeaderKey)
+}
+
+func GetUserAgent(h transport.Header) string {
+	return h.Get(UserAgentKey)
 }
 
 func GetExamToken(h transport.Header) string {
