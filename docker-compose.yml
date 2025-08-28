@@ -1,0 +1,13 @@
+# docker-compose.yml
+version: '3'
+services:
+  exam_api:
+    build: .
+    container_name: exam_api
+    ports:
+      - "8001:8000"
+    volumes:
+      - /opt/api/configs/exam_api:/home/appuser/configs
+    environment:
+      - ENV=prod
+    restart: unless-stopped
