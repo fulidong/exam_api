@@ -7,17 +7,11 @@ info:
     version: 0.0.1
 paths:
     /v1/exam/exam_record:
-        post:
+        get:
             tags:
                 - ExamService
             description: 获取考试上次题目作答记录
             operationId: ExamService_ExamQuestionRecord
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/exam_api.v1.ExamQuestionRecordRequest'
-                required: true
             responses:
                 "200":
                     description: OK
@@ -164,9 +158,6 @@ components:
                     type: string
                 token=:
                     type: string
-        exam_api.v1.ExamQuestionRecordRequest:
-            type: object
-            properties: {}
         exam_api.v1.ExamQuestionRecordResponse:
             type: object
             properties:
@@ -193,8 +184,6 @@ components:
         exam_api.v1.HeartbeatAndSaveRequest:
             type: object
             properties:
-                examinee_association_id:
-                    type: string
                 answer_data:
                     type: array
                     items:

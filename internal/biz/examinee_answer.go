@@ -11,6 +11,8 @@ import (
 	"exam_api/internal/pkg/icontext"
 	innErr "exam_api/internal/pkg/ierrors"
 	"exam_api/internal/pkg/isnowflake"
+	"exam_api/internal/pkg/itask"
+	"fmt"
 	"github.com/go-kratos/kratos/v2/log"
 	"math"
 	"time"
@@ -31,6 +33,7 @@ type ExamineeAnswerUseCase struct {
 	salesPaperUc             *SalesPaperUseCase
 	examineeQuestionAnswerUC *ExamineeQuestionAnswerUseCase
 	examEvent                *ExamEventUseCase
+	redisRepo                RedisRepository
 	log                      *log.Helper
 }
 
@@ -39,6 +42,7 @@ func NewExamineeAnswerUseCase(repo ExamineeAnswerRepo,
 	salesPaperUc *SalesPaperUseCase,
 	examineeQuestionAnswerUC *ExamineeQuestionAnswerUseCase,
 	examEvent *ExamEventUseCase,
+	redisRepo RedisRepository,
 	logger log.Logger) *ExamineeAnswerUseCase {
 	return &ExamineeAnswerUseCase{
 		repo:                     repo,
@@ -46,6 +50,7 @@ func NewExamineeAnswerUseCase(repo ExamineeAnswerRepo,
 		salesPaperUc:             salesPaperUc,
 		examineeQuestionAnswerUC: examineeQuestionAnswerUC,
 		examEvent:                examEvent,
+		redisRepo:                redisRepo,
 		log:                      log.NewHelper(logger)}
 }
 
@@ -90,25 +95,26 @@ func (uc *ExamineeAnswerUseCase) StartExam(ctx context.Context, req *v1.StartExa
 			return
 		}
 		//第一次进入考试
+		curTime := time.Now()
 		examineeAnswer = &entity.ExamineeAnswer{
 			ID:                              id,
 			SalesPaperID:                    association.SalesPaperID,
 			ExamineeID:                      association.ExamineeID,
 			ExamineeSalesPaperAssociationID: association.ID,
 			Score:                           0,
-			BeginTestTime:                   time.Now(),
+			BeginTestTime:                   curTime,
+			LastActionTime:                  curTime,
 			SubmitTime:                      nil,
 			CompleteQuestionNum:             0,
-			LastActionTime:                  nil,
 			Comparability:                   0,
-			Deadline:                        time.Now().AddDate(0, 0, 3),
+			Deadline:                        curTime.AddDate(0, 0, 3),
 			Usability:                       0,
 			RemainingTimelimit:              salesPaper.RecommendTimeLim * 60,
 			CreatedBy:                       userId,
 		}
 		e = uc.repo.Create(ctx, examineeAnswer)
 		if e != nil {
-			l.Errorf("StartExam.repo.Create Failed, req:%v, err:%v", req, err.Error())
+			l.Errorf("StartExam.repo.Create Failed, req:%v, err:%v", req, e.Error())
 			err = innErr.ErrInternalServer
 			return
 		}
@@ -151,26 +157,26 @@ func (uc *ExamineeAnswerUseCase) HeartbeatAndSave(ctx context.Context, req *v1.H
 		userId, _        = icontext.UserIdFrom(ctx)
 		associationId, _ = icontext.AssociationIdFrom(ctx)
 	)
+	// 1. 获取答题信息
 	examineeAnswer, err := uc.repo.GetByAssociationId(ctx, associationId)
 	if err != nil {
 		l.Errorf("HeartbeatAndSave.repo.GetByAssociationId.NextID Failed, req:%v, err:%v", req, err.Error())
 		err = innErr.ErrInternalServer
 		return
 	}
-	// 计算本次耗时（最多算 60 秒）
+	// 2. 防止频繁心跳
 	thisDuration := 0.0
 	activeTime := time.Now()
-
-	if examineeAnswer.LastActionTime != nil && !examineeAnswer.LastActionTime.IsZero() {
-		gap := activeTime.Sub(*examineeAnswer.LastActionTime)
+	if !examineeAnswer.LastActionTime.IsZero() {
+		gap := activeTime.Sub(examineeAnswer.LastActionTime)
 		if gap < 5*time.Second { // 小于 5 秒
 			err = innErr.ErrHeartbeat
 			return
 		}
 	}
-	// 4. 判断是否“重新进入考试”（上次心跳超过 5 分钟）
-	if examineeAnswer.LastActionTime != nil && !examineeAnswer.LastActionTime.IsZero() {
-		elapsed := activeTime.Sub(*examineeAnswer.LastActionTime).Seconds()
+	// 3. 判断是否“重新进入考试”（上次心跳超过 5 分钟），记录事件
+	if !examineeAnswer.LastActionTime.IsZero() {
+		elapsed := activeTime.Sub(examineeAnswer.LastActionTime).Seconds()
 		if elapsed > 300 { // 超过 5 分钟
 			//记录事件
 			meta := map[string]interface{}{
@@ -178,30 +184,31 @@ func (uc *ExamineeAnswerUseCase) HeartbeatAndSave(ctx context.Context, req *v1.H
 				"last_active": examineeAnswer.LastActionTime.Unix(),
 				"current":     activeTime,
 			}
-			go func() {
+
+			go itask.TaskWithContext(ctx, func() {
 				if e := uc.examEvent.ExamEvent(ctx, examineeAnswer.ID, _const.ExamEventLongInactive, meta); e != nil {
-					l.Errorf("HeartbeatAndSave.examEvent.ExamEvent Failed, req:%v, err:%v", req, err.Error())
+					l.Errorf("HeartbeatAndSave.examEvent.ExamEvent Failed, req:%v, err:%v", req, e.Error())
 				}
-			}()
+			}, l)
 		}
-		// 计算本次耗时（最多算 60 秒）
-		thisDuration = math.Min(elapsed, 60)
+		// 计算本次耗时（最多算 30 秒）
+		thisDuration = math.Min(elapsed, 30)
 	}
-	// 检查时间是否已经用完
+	// 4. 检查考试时间是否已经用完
 	limit := examineeAnswer.RemainingTimelimit - int32(thisDuration)
 	if limit <= 0 {
 		// todo 自动提交
 		resp.Remaining = 0
 		return
 	}
-	// 更新最后活跃时间和剩余时间(乐观锁)
-	rowsAffected, err := uc.repo.UpdateAction(ctx, req.ExamineeAssociationId, activeTime, *examineeAnswer.LastActionTime, limit, int32(len(req.AnswerData)))
+	// 5. 更新最后活跃时间和剩余时间(乐观锁)
+	rowsAffected, err := uc.repo.UpdateAction(ctx, examineeAnswer.ID, activeTime, examineeAnswer.LastActionTime, limit, int32(len(req.AnswerData)))
 	if err != nil {
-		l.Errorf("HeartbeatAndSave.repo.GetByAssociationId.NextID Failed, req:%v, err:%v", req, err.Error())
+		l.Errorf("HeartbeatAndSave.repo.UpdateAction Failed, req:%v, err:%v", req, err.Error())
 		err = nil
 	}
 	if rowsAffected == 0 {
-		// 说明有其他请求抢先更新了 LastActionTime
+		// 6. 说明有其他请求抢先更新了 LastActionTime
 		// 降级：查最新状态，但不再累加时间（防重复计时）
 		examineeAnswer, e := uc.repo.GetByAssociationId(ctx, associationId)
 		if e != nil {
@@ -211,7 +218,7 @@ func (uc *ExamineeAnswerUseCase) HeartbeatAndSave(ctx context.Context, req *v1.H
 		}
 		limit = examineeAnswer.RemainingTimelimit
 	}
-	// 保存答案
+	// 7. 保存答案
 	if len(req.AnswerData) > 0 {
 		answers := make([]*entity.ExamineeAnswerQuestionAnswer, 0, len(req.AnswerData))
 		for _, questionAnswerData := range req.AnswerData {
@@ -224,6 +231,7 @@ func (uc *ExamineeAnswerUseCase) HeartbeatAndSave(ctx context.Context, req *v1.H
 				Score:            0,
 				OptionSign:       string(sign),
 				CreatedBy:        userId,
+				UpdatedBy:        userId,
 			})
 		}
 		err = uc.examineeQuestionAnswerUC.SaveAnswer(ctx, answers)
@@ -233,12 +241,140 @@ func (uc *ExamineeAnswerUseCase) HeartbeatAndSave(ctx context.Context, req *v1.H
 			return
 		}
 	}
-	go func() {
+	// 8. 记录心跳事件
+	go itask.TaskWithContext(ctx, func() {
 		if e := uc.examEvent.ExamEvent(ctx, examineeAnswer.ID, _const.ExamEventHeartbeat, make(map[string]interface{})); e != nil {
-			l.Errorf("HeartbeatAndSave.examEvent.ExamEvent Failed, req:%v, err:%v", req, err.Error())
+			l.Errorf("HeartbeatAndSave.examEvent.ExamEvent Failed, req:%v, err:%v", req, e.Error())
+		}
+	}, l)
+	resp.Remaining = limit
+	return
+}
+
+func (uc *ExamineeAnswerUseCase) SubmitExam(ctx context.Context, req *v1.SubmitExamRequest) (resp *v1.SubmitExamResponse, err error) {
+	resp = &v1.SubmitExamResponse{}
+	var (
+		l                = uc.log.WithContext(ctx)
+		userId, _        = icontext.UserIdFrom(ctx)
+		associationId, _ = icontext.AssociationIdFrom(ctx)
+		thisDuration     = 0.0
+		activeTime       = time.Now()
+		lockExpire       = 5 * time.Second // 锁过期时间（防死锁）
+		lockValue, _     = isnowflake.SnowFlake.NextID("lock")
+		submitKeyExpire  = 4 * time.Hour // 提交标记过期时间
+	)
+	lockKey := fmt.Sprintf(_const.RedisLockKey, associationId)
+	submitKey := fmt.Sprintf(_const.RedisSubmitKey, associationId)
+
+	// 1. 第一重校验：检查是否已提交（Redis 快速失败）
+	isSubmitted, _ := uc.redisRepo.Exists(ctx, submitKey)
+	if isSubmitted {
+		err = errors.New("试卷已提交，请勿重复操作")
+		return
+	}
+	// 3. 获取分布式锁（5s 过期）
+	ok, err := uc.redisRepo.SetNX(ctx, lockKey, lockValue, lockExpire)
+	if err != nil {
+		l.Errorf("SubmitExam.redisRepo.SetNX Failed, req:%v, err:%v", req, err.Error())
+		err = innErr.ErrInternalServer
+		return
+	}
+	if !ok {
+		err = errors.New("系统繁忙，请稍后重试")
+		return
+	}
+
+	// 4. 延迟释放锁（用 defer）
+	defer func() {
+		// 直接使用 Eval
+		result, err := uc.redisRepo.Eval(ctx, _const.UnlockScript, []string{lockKey}, lockValue)
+		if err != nil {
+			l.Errorf("释放锁失败: %v", err)
+		} else if n, ok := result.(int64); !ok || n == 0 {
+			l.Errorf("未释放锁（可能已过期或被其他协程持有）: %s", lockKey)
 		}
 	}()
-	resp.Remaining = limit
+	examineeAnswer, err := uc.repo.GetByAssociationId(ctx, associationId)
+	if err != nil {
+		l.Errorf("SubmitExam.repo.GetByAssociationId Failed, associationId:%v, err:%v ", associationId, err.Error())
+		err = innErr.ErrInternalServer
+		return
+	}
+	// 5. 第二重校验：查询数据库最新状态（防并发）
+	association, err := uc.associationUc.GetById(ctx, associationId)
+	if err != nil {
+		l.Errorf("SubmitExam.associationUc.GetById Failed, associationId:%v, err:%v ", associationId, err.Error())
+		err = innErr.ErrInternalServer
+		return
+	}
+	if association == nil || association.StageNumber != 1 {
+		err = errors.New("考试记录不存在")
+		return
+	}
+	if association.StageNumber == int32(v1.StageNumber_Submit) {
+		err = errors.New("试卷已提交，请勿重复操作")
+		return
+	}
+	if association.StageNumber != int32(v1.StageNumber_InProgress) {
+		err = errors.New("考试状态异常")
+		return
+	}
+	// 6. 更新最后活跃时间和作答题目数量
+	if !examineeAnswer.LastActionTime.IsZero() {
+		elapsed := activeTime.Sub(examineeAnswer.LastActionTime).Seconds()
+		// 计算本次耗时（最多算 30 秒）
+		thisDuration = math.Min(elapsed, 30)
+	}
+	// 7. 检查考试时间是否已经用完
+	limit := examineeAnswer.RemainingTimelimit - int32(thisDuration)
+	if limit <= 0 {
+		limit = 0
+	}
+	// 8. 更新最后活跃时间和剩余时间
+	_, err = uc.repo.UpdateAction(ctx, examineeAnswer.ID, activeTime, examineeAnswer.LastActionTime, limit, int32(len(req.AnswerData)))
+	if err != nil {
+		l.Errorf("HeartbeatAndSave.repo.UpdateAction Failed, req:%v, err:%v", req, err.Error())
+		err = innErr.ErrInternalServer
+		return
+	}
+	// 9. 保存答案，更新状态
+	if len(req.AnswerData) > 0 {
+		answers := make([]*entity.ExamineeAnswerQuestionAnswer, 0, len(req.AnswerData))
+		for _, questionAnswerData := range req.AnswerData {
+			id, _ := isnowflake.SnowFlake.NextID(_const.ExamineeAnswerQuestionAnswerPrefix)
+			sign, _ := json.Marshal(questionAnswerData.OptionsSerialNumberData)
+			answers = append(answers, &entity.ExamineeAnswerQuestionAnswer{
+				ID:               id,
+				ExamineeAnswerID: examineeAnswer.ID,
+				QuestionID:       questionAnswerData.QuestionId,
+				Score:            0,
+				OptionSign:       string(sign),
+				CreatedBy:        userId,
+				UpdatedBy:        userId,
+			})
+		}
+		err = uc.examineeQuestionAnswerUC.SaveAnswer(ctx, answers)
+		if err != nil {
+			l.Errorf("HeartbeatAndSave.examineeQuestionAnswerUC.SaveAnswer Failed, req:%v, err:%v", req, err.Error())
+			err = innErr.ErrInternalServer
+			return
+		}
+	}
+	// 10. 更新状态
+	err = uc.associationUc.UpdateStageNumber(ctx, associationId, v1.StageNumber_Submit)
+	if err != nil {
+		l.Errorf("HeartbeatAndSave.examineeQuestionAnswerUC.SaveAnswer Failed, req:%v, err:%v", req, err.Error())
+		err = innErr.ErrInternalServer
+		return
+	}
+	// 11. 添加提交成功key，防止重放
+	_ = uc.redisRepo.Set(ctx, submitKey, "", submitKeyExpire)
+	// 12. 记录心跳事件
+	go itask.TaskWithContext(ctx, func() {
+		if e := uc.examEvent.ExamEvent(ctx, examineeAnswer.ID, _const.ExamEventSubmit, make(map[string]interface{})); e != nil {
+			l.Errorf("HeartbeatAndSave.examEvent.ExamEvent Failed, req:%v, err:%v", req, e.Error())
+		}
+	}, l)
 	return
 }
 

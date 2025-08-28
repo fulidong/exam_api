@@ -16,7 +16,7 @@ type RedisRepository interface {
 	Del(ctx context.Context, keys ...string) error
 	Expire(ctx context.Context, key string, expiration time.Duration) error
 	TTL(ctx context.Context, key string) (time.Duration, error)
-
+	SetNX(ctx context.Context, key string, value string, expiration time.Duration) (bool, error)
 	// 数值操作
 	Incr(ctx context.Context, key string) (int64, error)
 	IncrBy(ctx context.Context, key string, increment int64) (int64, error)
@@ -33,7 +33,7 @@ type RedisRepository interface {
 	// 通用操作
 	Exists(ctx context.Context, key string) (bool, error)
 	Keys(ctx context.Context, pattern string) ([]string, error)
-
+	Eval(ctx context.Context, script string, keys []string, args ...interface{}) (interface{}, error)
 	// 事务/批处理（可选）
 	Pipeline(ctx context.Context) RedisPipeline
 }

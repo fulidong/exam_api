@@ -43,7 +43,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*
 	examineeQuestionAnswerUseCase := biz.NewExamineeQuestionAnswerUseCase(examineeQuestionAnswerRepo, logger)
 	examEventRepo := data.NewExamEventRepo(dataData, logger)
 	examEventUseCase := biz.NewExamEventUseCase(examEventRepo, logger)
-	examineeAnswerUseCase := biz.NewExamineeAnswerUseCase(examineeAnswerRepo, examineeSalesPaperAssociationUseCase, salesPaperUseCase, examineeQuestionAnswerUseCase, examEventUseCase, logger)
+	examineeAnswerUseCase := biz.NewExamineeAnswerUseCase(examineeAnswerRepo, examineeSalesPaperAssociationUseCase, salesPaperUseCase, examineeQuestionAnswerUseCase, examEventUseCase, redisRepository, logger)
 	examService := service.NewExamService(loginUseCase, examineeSalesPaperAssociationUseCase, questionUseCase, salesPaperUseCase, examineeAnswerUseCase)
 	grpcServer := server.NewGRPCServer(confServer, examService, logger)
 	httpServer := server.NewHTTPServer(confServer, examService, logger)

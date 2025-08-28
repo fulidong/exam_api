@@ -50,7 +50,7 @@ func RegisterExamServiceHTTPServer(s *http.Server, srv ExamServiceHTTPServer) {
 	r.GET("/v1/exam/page_list", _ExamService_GetExamPageList0_HTTP_Handler(srv))
 	r.POST("/v1/exam/start", _ExamService_StartExam0_HTTP_Handler(srv))
 	r.GET("/v1/exam/questions", _ExamService_ExamQuestion0_HTTP_Handler(srv))
-	r.POST("/v1/exam/exam_record", _ExamService_ExamQuestionRecord0_HTTP_Handler(srv))
+	r.GET("/v1/exam/exam_record", _ExamService_ExamQuestionRecord0_HTTP_Handler(srv))
 	r.POST("/v1/exam/heartbeat_and_save", _ExamService_HeartbeatAndSave0_HTTP_Handler(srv))
 	r.POST("/v1/exam/submit", _ExamService_SubmitExam0_HTTP_Handler(srv))
 }
@@ -140,9 +140,6 @@ func _ExamService_ExamQuestion0_HTTP_Handler(srv ExamServiceHTTPServer) func(ctx
 func _ExamService_ExamQuestionRecord0_HTTP_Handler(srv ExamServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ExamQuestionRecordRequest
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
@@ -250,10 +247,10 @@ func (c *ExamServiceHTTPClientImpl) ExamQuestion(ctx context.Context, in *ExamQu
 func (c *ExamServiceHTTPClientImpl) ExamQuestionRecord(ctx context.Context, in *ExamQuestionRecordRequest, opts ...http.CallOption) (*ExamQuestionRecordResponse, error) {
 	var out ExamQuestionRecordResponse
 	pattern := "/v1/exam/exam_record"
-	path := binding.EncodeURL(pattern, in, false)
+	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationExamServiceExamQuestionRecord))
 	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

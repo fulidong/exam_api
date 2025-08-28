@@ -73,8 +73,7 @@ message ExamQuestionRecordResponse {
 }
 
 message HeartbeatAndSaveRequest {
-  string examinee_association_id=1 [json_name="examinee_association_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"examinee_association_id", required:["examinee_association_id"]}];
-  repeated QuestionAnswerData answer_data=2[json_name="answer_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"答案"}];
+  repeated QuestionAnswerData answer_data=1[json_name="answer_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"答案"}];
 }
 
 message HeartbeatAndSaveResponse {
@@ -85,7 +84,7 @@ message HeartbeatAndSaveResponse {
 
 message QuestionAnswerData {
   string question_id=1 [json_name="question_id",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"question_id"}];
-  repeated string options_serial_number_data=5 [json_name="options_serial_number_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"题目选项"}];
+  repeated string options_serial_number_data=2 [json_name="options_serial_number_data",(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field)={title:"题目选项"}];
 }
 
 message SubmitExamRequest {

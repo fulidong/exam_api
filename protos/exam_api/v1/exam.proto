@@ -64,7 +64,7 @@ service ExamService {
 
   // 获取考试上次题目作答记录
   rpc ExamQuestionRecord(ExamQuestionRecordRequest) returns (ExamQuestionRecordResponse){
-    option (google.api.http)={post:"/v1/exam/exam_record", body:"*"};
+    option (google.api.http)={get:"/v1/exam/exam_record"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {summary: "获取考试上次题目作答记录",tags: ["考试相关"]};
   };
   //心跳&保存答案

@@ -16,3 +16,15 @@ func (s *ExamService) ExamQuestion(ctx context.Context, in *v1.ExamQuestionReque
 func (s *ExamService) StartExam(ctx context.Context, in *v1.StartExamRequest) (*v1.StartExamResponse, error) {
 	return s.examineeAnswerUseCase.StartExam(ctx, in)
 }
+
+func (s *ExamService) HeartbeatAndSave(ctx context.Context, in *v1.HeartbeatAndSaveRequest) (*v1.HeartbeatAndSaveResponse, error) {
+	return s.examineeAnswerUseCase.HeartbeatAndSave(ctx, in)
+}
+
+func (s *ExamService) SubmitExam(ctx context.Context, in *v1.SubmitExamRequest) (*v1.SubmitExamResponse, error) {
+	return s.examineeAnswerUseCase.SubmitExam(ctx, in)
+}
+
+func (s *ExamService) ExamQuestionRecord(ctx context.Context, in *v1.ExamQuestionRecordRequest) (*v1.ExamQuestionRecordResponse, error) {
+	return s.examineeAnswerUseCase.ExamQuestionRecord(ctx, in)
+}

@@ -25,9 +25,10 @@ var AllowedVars = map[string]interface{}{
 }
 
 var VerifyExamTokenMethod = map[string]struct{}{
-	"/exam_api.v1.ExamService/ExamQuestion":     struct{}{},
-	"/exam_api.v1.ExamService/HeartbeatAndSave": struct{}{},
-	"/exam_api.v1.ExamService/SubmitExam":       struct{}{},
+	"/exam_api.v1.ExamService/ExamQuestion":       struct{}{},
+	"/exam_api.v1.ExamService/ExamQuestionRecord": struct{}{},
+	"/exam_api.v1.ExamService/HeartbeatAndSave":   struct{}{},
+	"/exam_api.v1.ExamService/SubmitExam":         struct{}{},
 }
 
 // 邮件模板

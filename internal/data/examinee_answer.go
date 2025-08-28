@@ -53,7 +53,7 @@ func (r *ExamineeAnswerRepo) UpdateAction(ctx context.Context, examineeAnswerId 
 	}
 	// 执行更新
 	res := r.data.db.WithContext(ctx).Model(&entity.ExamineeAnswer{}).
-		Where(" id = ? and last_action_time = ? ", examineeAnswerId, lastActionTime2).
+		Where(" id = ? and last_action_time = ? ", examineeAnswerId, lastActionTime2.Format(time.DateTime)).
 		Updates(updates)
 
 	return res.RowsAffected, res.Error

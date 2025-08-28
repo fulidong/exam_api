@@ -86,6 +86,10 @@ func (r *redisRepository) TTL(ctx context.Context, key string) (time.Duration, e
 	return r.client.TTL(ctx, key).Result()
 }
 
+func (r *redisRepository) SetNX(ctx context.Context, key string, value string, expiration time.Duration) (bool, error) {
+	return r.client.SetNX(ctx, key, value, expiration).Result()
+}
+
 // === 数值操作 ===
 
 func (r *redisRepository) Incr(ctx context.Context, key string) (int64, error) {
@@ -138,7 +142,12 @@ func (r *redisRepository) Exists(ctx context.Context, key string) (bool, error) 
 }
 
 func (r *redisRepository) Keys(ctx context.Context, pattern string) ([]string, error) {
+
 	return r.client.Keys(ctx, pattern).Result()
+}
+
+func (r *redisRepository) Eval(ctx context.Context, script string, keys []string, args ...interface{}) (interface{}, error) {
+	return r.client.Eval(ctx, script, keys, args).Result()
 }
 
 // === Pipeline 实现 ===
